@@ -41,12 +41,21 @@
         return;
       }
 
-      // If the plug-in has already been applied call the resize method and 
-      // return.
+      // If the plug-in has already been applied then check to see if we need
+      // to expand it, and then destroy the plug-in, since we'll add it back
+      // shortly.
 
-      if ($el.closest(".js-content-toggle-wrapper").length) {
-        resize.apply($el, [options]);
-        return;
+      var $contentToggleWrapper = null;
+      var $contentToggleLink = null;
+      var needToExpand = false;
+
+      if ($el.parent().hasClass("js-content-toggle-wrapper")) {
+        $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
+        $contentToggleLink = $contentToggleWrapper.siblings(".js-content-toggle-link");
+        
+        needToExpand = $contentToggleLink.hasClass("js-show-less");
+        
+        destroy.apply($el);
       }
 
       // Othersise apply the plug-in
@@ -72,39 +81,11 @@
       $contentToggleWrapper
         .siblings(".js-content-toggle-link")
         .on("click", contentToggleLink_click);
-    });
-  };
 
-  /**
-   * @description Invoked by the caller when new content is added to or removed
-   * from the toggled element.  Remove and reapply the plug-in toggling back to
-   * the expanded or collapsed state depending on which we were in prior to the 
-   * resizing. In this manner, if the height of the element is less than the 
-   * specified collapsed height, we won't bother re-applying the plug-in.
-   * @param options.collpasedHeight Must be spedified when resizing or else the
-   * default value will be used, see init();
-   */
-  var resize = function(options) {
-    return this.each(function() { 
-      
-      // Check whether we need to expand the content toggle plug-in afer we 
-      // reapply it.
+      // After applying the plug-in, if we re-applied it, and need to expand 
+      // the content, we'll do so now.
 
-      var $el = $(this);
-      var $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
-      var $contentToggleLink = $contentToggleWrapper.siblings(".js-content-toggle-link");
-
-      var expand = $contentToggleLink.hasClass("js-show-less");
-
-      // Call destroy and then init in the context of $el
-
-      destroy.apply($el);
-      init.apply($el, [options]);
-
-      // Finally, expand the toggle content wrapper if it was expanded before
-      // we reapplied the plug-in.
-
-      if (expand) {
+      if (needToExpand) {
         $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
         $contentToggleLink = $contentToggleWrapper.siblings(".js-content-toggle-link");
         $contentToggleLink.trigger("click");
@@ -120,7 +101,7 @@
     return this.each(function() {
       var $el = $(this);
 
-      if ($el.parent().hasClass(".js-content-toggle-wrapper")) {
+      if ($el.parent().hasClass("js-content-toggle-wrapper")) {
         $el.unwrap();
       }
       
@@ -160,7 +141,6 @@
 
   var methods = {
     "init": init,
-    "resize": resize,
     "destroy": destroy
   };
 
