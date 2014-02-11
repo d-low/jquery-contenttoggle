@@ -120,7 +120,10 @@
     return this.each(function() {
       var $el = $(this);
 
-      $el.unwrap();
+      if ($el.parent().hasClass(".js-content-toggle-wrapper")) {
+        $el.unwrap();
+      }
+      
       $el.siblings(".js-content-toggle-gradient").remove();
       $el.siblings(".js-content-toggle-link")
         .off("click")
