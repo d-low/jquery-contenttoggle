@@ -10,6 +10,7 @@
 (function($) {
 
   var pluginName = "jQuery.contenttoggle";
+  var resizeTimeout = null;
 
   /**
    * @description Initialize the content toggle plug-in.  Wrapping the element
@@ -78,12 +79,20 @@
         '</a>'
       ].join(''));
 
+      //
+      // Bind event handlers
+      //
+
       $contentToggleWrapper
         .siblings(".js-content-toggle-link")
         .on("click", contentToggleLink_click);
+      $(window).on("resize.contenttoggle", {contentToggleEl: $el}, resize)
 
-      // After applying the plug-in, if we re-applied it, and need to expand 
-      // the content, we'll do so now.
+      //
+      // If the plug-in has been re-applied and needs to be expanded because it
+      // was expanded before being reapplied, then trigger an on click event to
+      // expand it now.
+      //
 
       if (needToExpand) {
         $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
@@ -109,9 +118,38 @@
       $el.siblings(".js-content-toggle-link")
         .off("click")
         .remove();
+      $(window).off("resize.contenttoggle");
     });
   };
 
+  /**
+   * @description Clear and set timeouts to catch the final window resize event
+   * (aka debouncing) and then handle the last resize event.
+   */
+  var resize = function(e) { 
+    window.clearTimeout(resizeTimeout);
+    resizeTimeout = window.setTimeout(function() { handleResize(e); }, 150);
+  };
+
+  /** 
+   * @description When the window has resized we need obtain the origially 
+   * requested collapsed height and then reinitialize the plug-in.
+   */
+  var handleResize = function(e) {
+
+    if (! e.data && ! e.data.contentToggleEl) { 
+      return;
+    }
+
+    var $el = e.data.contentToggleEl;
+    var collapsedHeight = $el.closest(".js-content-toggle-wrapper").data("minheight");
+
+    init.apply($el, [{collapsedHeight: collapsedHeight}]);
+  };
+
+  /**
+   * @description Expand/collapse the content toggled content to show or hide it.
+   */
   var contentToggleLink_click = function(e) { 
 
     e.preventDefault();
