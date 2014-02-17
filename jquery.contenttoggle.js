@@ -19,7 +19,9 @@
   };
 
   $.ContentToggle.defaults = {
-    collapsedHeight: 200
+    collapsedHeight: 200,
+    collapseText: "Show Less",
+    expandText: "Show More",
   };
 
 
@@ -82,7 +84,7 @@
       '</div>',
       '<a class="content-toggle-link js-content-toggle-link js-show-more" ' + 
         'href="javascript:void(0);">',
-        'Show More',
+        this.options.expandText,
       '</a>'
     ].join(''));
 
@@ -153,8 +155,7 @@
 
     // console.log("$.ContentToggle._window_handleResize(): Called for " + this.$el.attr("id"));
 
-    var collapsedHeight = this.$el.closest(".js-content-toggle-wrapper").data("minheight");
-    this.init({ collapsedHeight: collapsedHeight });
+    this.init(this.options);
   };
 
   /**
@@ -175,7 +176,7 @@
       $contentToggleLink
         .removeClass("js-show-more")
         .addClass("js-show-less")
-        .html("Show Less");
+        .html(this.options.collapseText);
     }
     else {
       $contentToggleWrapper.css("height", $contentToggleWrapper.data("minheight") + "px");
@@ -183,7 +184,7 @@
       $contentToggleLink
         .removeClass("js-show-less")
         .addClass("js-show-more")
-        .html("Show More");
+        .html(this.options.expandText);
     }
   };
 
