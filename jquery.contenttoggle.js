@@ -3,154 +3,164 @@
  * element and styles. It is meant to be applied to an element that should have
  * its content toggled between being expanded and somewhat collapsed.  In the 
  * collapsed state there will be a transparent gradient overlaid on the content
- * that is hidden.  This plug-in requires styles in the the content_toggle 
+ * that is hidden.  This plug-in requires styles in the the contenttoggle 
  * style sheet.
  * @see http://www.amazon.com/dp/B003F3PKUE
  */
 (function($) {
 
-  var pluginName = "jQuery.contenttoggle";
-  var resizeTimeout = null;
+  var pluginName = "contenttoggle";
 
-  /**
-   * @description Initialize the content toggle plug-in.  Wrapping the element
-   * in out toggle wrapper and adding the shim and expand/collapse link. 
-   * @param options.collapsedHeight Optional parameter use to specify the 
-   * collapsed height of the toggle wrapper.  Default value if not specified is
-   * 200px.
-   */
-  var init = function(options) {
+  $.ContentToggle = function(options, element) {
+    this.resizeTimeout = null;
+  
+    this.$el = $(element);
+    this.init(options);
+  };
 
-    // Use the specified collapsed height or default to 200px
+  $.ContentToggle.defaults = {
+    collapsedHeight: 200
+  };
 
-    var collapsedHeight = options && options.collapsedHeight ? options.collapsedHeight : 200;
-    collapsedHeight = parseInt(collapsedHeight, 10);
-    collapsedHeight = isNaN(collapsedHeight) ? 200 : collapsedHeight;
 
-    return this.each(function() {
-      var $el = $(this);
-      var height = $el.height();
+  // --------------------------------------------------------------------------
+  // Public Methods
+  // --------------------------------------------------------------------------
 
-      // If the height of the element is less than the collapsed height then
-      // remove the plug-in if it as already applied or don't bother applying 
-      // it if it hasn't yet been applied.
+  $.ContentToggle.prototype.init = function(options) {
 
-      if (height < collapsedHeight) {
-        if ($el.closest(".js-content-toggle-wrapper").length) { 
-          destroy.apply($el);
-        }
-        return;
-      }
+    this.options = $.extend(true, {}, $.ContentToggle.defaults, options);
 
-      // If the plug-in has already been applied then check to see if we need
-      // to expand it, and then destroy the plug-in, since we'll add it back
-      // shortly.
+    //
+    // If the plug-in has already been applied then check to see if we need
+    // to expand it, and then destroy the plug-in, since we'll add it back
+    // shortly and we need the element's natural height for the next step.
+    //
 
-      var $contentToggleWrapper = null;
-      var $contentToggleLink = null;
-      var needToExpand = false;
+    var needToExpand = false;
 
-      if ($el.parent().hasClass("js-content-toggle-wrapper")) {
-        $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
-        $contentToggleLink = $contentToggleWrapper.siblings(".js-content-toggle-link");
-        
-        needToExpand = $contentToggleLink.hasClass("js-show-less");
-        
-        destroy.apply($el);
-      }
-
-      // Othersise apply the plug-in
-
-      $el.wrap([
-        '<div class="content-toggle-wrapper js-content-toggle-wrapper colllapsed" ' + 
-          'data-maxheight="' + height + '" ' + 
-          'data-minheight="' + collapsedHeight + '" ' + 
-          'style="height:' + collapsedHeight + 'px;">',
-        '</div>'].join(''));
+    if (this.$el.data(pluginName)) {
+      needToExpand = this.$el
+                      .closest(".js-content-toggle-wrapper")
+                      .siblings(".js-content-toggle-link")
+                      .hasClass("js-show-less");
       
-      var $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
+      this.destroy();
+    }
 
-      $contentToggleWrapper.after([
-        '<div class="content-toggle-gradient js-content-toggle-gradient">',
-        '</div>',
-        '<a class="content-toggle-link js-content-toggle-link js-show-more" ' + 
-          'href="javascript:void(0);">',
-          '&#9660; Show All',
-        '</a>'
-      ].join(''));
+    //
+    // If the height of the element is less than the collapsed height then
+    // remove the plug-in if it as already applied or don't bother applying 
+    // it if it hasn't yet been applied.
+    //
 
-      //
-      // Bind event handlers
-      //
+    var height = this.$el.height();
 
-      $contentToggleWrapper
-        .siblings(".js-content-toggle-link")
-        .on("click", contentToggleLink_click);
-      $(window).on("resize.contenttoggle", {contentToggleEl: $el}, resize)
-
-      //
-      // If the plug-in has been re-applied and needs to be expanded because it
-      // was expanded before being reapplied, then trigger an on click event to
-      // expand it now.
-      //
-
-      if (needToExpand) {
-        $contentToggleWrapper = $el.closest(".js-content-toggle-wrapper");
-        $contentToggleLink = $contentToggleWrapper.siblings(".js-content-toggle-link");
-        $contentToggleLink.trigger("click");
+    if (height < this.options.collapsedHeight) {
+      if (this.$el.data(pluginName)) { 
+        this.destroy();
       }
-    });
+
+      return;
+    }
+
+    //
+    // Otherwise apply the plug-in
+    //
+
+    this.$el.wrap([
+      '<div class="content-toggle-wrapper js-content-toggle-wrapper colllapsed" ' + 
+        'data-maxheight="' + height + '" ' + 
+        'data-minheight="' + this.options.collapsedHeight + '" ' + 
+        'style="height:' + this.options.collapsedHeight + 'px;">',
+      '</div>'].join(''));
+    
+    var $contentToggleWrapper = this.$el.closest(".js-content-toggle-wrapper");
+
+    $contentToggleWrapper.after([
+      '<div class="content-toggle-gradient js-content-toggle-gradient">',
+      '</div>',
+      '<a class="content-toggle-link js-content-toggle-link js-show-more" ' + 
+        'href="javascript:void(0);">',
+        Show More',
+      '</a>'
+    ].join(''));
+
+    //
+    // Bind event handlers
+    //
+
+    $contentToggleWrapper
+      .siblings(".js-content-toggle-link")
+      .on("click." + pluginName, $.proxy(this._contentToggleLink_click, this));
+    $(window).on("resize." + pluginName, $.proxy(this._window_resize, this));
+
+    //
+    // If the plug-in has been re-applied and needs to be expanded because it
+    // was expanded before being reapplied, then trigger an on click event to
+    // expand it now.
+    //
+
+    if (needToExpand) {
+      $contentToggleWrapper = this.$el.closest(".js-content-toggle-wrapper");
+      $contentToggleLink = $contentToggleWrapper.siblings(".js-content-toggle-link");
+      $contentToggleLink.trigger("click");
+    }
   };
 
   /**
    * @description Remove all generated content and event handlers and return 
    * the original element.
    */
-  var destroy = function() { 
-    return this.each(function() {
-      var $el = $(this);
+  $.ContentToggle.prototype.destroy = function() { 
+    if (this.$el.parent().hasClass("js-content-toggle-wrapper")) {
+      this.$el.unwrap();
+    }
+    
+    this.$el.siblings(".js-content-toggle-gradient").remove();
+    this.$el.siblings(".js-content-toggle-link").off("click." + pluginName).remove();
 
-      if ($el.parent().hasClass("js-content-toggle-wrapper")) {
-        $el.unwrap();
-      }
-      
-      $el.siblings(".js-content-toggle-gradient").remove();
-      $el.siblings(".js-content-toggle-link")
-        .off("click")
-        .remove();
-      $(window).off("resize.contenttoggle");
-    });
+    $(window).off("resize." + pluginName);
   };
+
+
+  // --------------------------------------------------------------------------
+  // Event Handling Methods
+  // --------------------------------------------------------------------------
 
   /**
    * @description Clear and set timeouts to catch the final window resize event
    * (aka debouncing) and then handle the last resize event.
    */
-  var resize = function(e) { 
-    window.clearTimeout(resizeTimeout);
-    resizeTimeout = window.setTimeout(function() { handleResize(e); }, 150);
+  $.ContentToggle.prototype._window_resize = function(e) { 
+    var self = this;
+    window.clearTimeout(this.resizeTimeout);
+    resizeTimeout = window.setTimeout(function() { self._window_handleResize(e); }, 150);
   };
 
   /** 
    * @description When the window has resized we need obtain the origially 
    * requested collapsed height and then reinitialize the plug-in.
    */
-  var handleResize = function(e) {
+  $.ContentToggle.prototype._window_handleResize = function() {
+    
+    // TODO: When there are multiple ContentToggle instances on the same page
+    // we see the resize event triggered not just when the window orientation
+    // changes thus triggering a resize event but also when the other 
+    // ContentToggle elements on the page are resized.  We should NOT handle
+    // those resize events as they cause the resize events to be triggered over
+    // and over again!
 
-    if (! e.data && ! e.data.contentToggleEl) { 
-      return;
-    }
+    // console.log("$.ContentToggle._window_handleResize(): Called for " + this.$el.attr("id"));
 
-    var $el = e.data.contentToggleEl;
-    var collapsedHeight = $el.closest(".js-content-toggle-wrapper").data("minheight");
-
-    init.apply($el, [{collapsedHeight: collapsedHeight}]);
+    var collapsedHeight = this.$el.closest(".js-content-toggle-wrapper").data("minheight");
+    this.init({ collapsedHeight: collapsedHeight });
   };
 
   /**
    * @description Expand/collapse the content toggled content to show or hide it.
    */
-  var contentToggleLink_click = function(e) { 
+  $.ContentToggle.prototype._contentToggleLink_click = function(e) { 
 
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -165,7 +175,7 @@
       $contentToggleLink
         .removeClass("js-show-more")
         .addClass("js-show-less")
-        .html("&#9650; Show Less");
+        .html("Show Less");
     }
     else {
       $contentToggleWrapper.css("height", $contentToggleWrapper.data("minheight") + "px");
@@ -173,26 +183,62 @@
       $contentToggleLink
         .removeClass("js-show-less")
         .addClass("js-show-more")
-        .html("&#9660; Show All");
+        .html("Show More");
     }
   };
 
-  var methods = {
-    "init": init,
-    "destroy": destroy
+
+  var logError = function(message) {
+    if (window.console) {
+      window.console.error(message);
+    }
   };
 
-  $.fn.contenttoggle = function(method) {
-    
-    if (methods[method]) {
-      return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
-    }
-    else if (typeof method === "object" || !method) {
-      return methods.init.apply(this, arguments);
+
+  // --------------------------------------------------------------------------
+  // Plug In Definition
+  // --------------------------------------------------------------------------
+
+  $.fn.contenttoggle = function(options) {
+
+    if (typeof options === 'string') {
+      var args = Array.prototype.slice.call(arguments, 1);
+
+      this.each(function() {
+        var self = $.data(this, pluginName);
+        
+        if (!self) {
+          logError(
+            "Cannot call methods on " + pluginName + " " +
+            "prior to initialization; " +
+            "attempted to call method '" + options + "'" 
+          );
+          return;
+        }
+
+        if (!$.isFunction(self[options]) || options.charAt(0) === "_" ) {
+          logError("No such method '" + options + "' for " + pluginName);
+          return;
+        }
+
+        self[options].apply(self, args);  
+      });
     }
     else {
-      $.error("Method " + method + " does not exist on " + pluginName + ".");
-    } 
+      this.each(function() {
+        var self = $.data(this, pluginName);
+
+        if (self) {
+          self.init();
+        }
+        else {
+          self = $.data(this, pluginName, new $.ContentToggle(options, this));
+        }
+
+      });
+    }
+
+    return this;
   };
 
 })(jQuery);
