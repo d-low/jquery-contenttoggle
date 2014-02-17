@@ -82,7 +82,7 @@
       '</div>',
       '<a class="content-toggle-link js-content-toggle-link js-show-more" ' + 
         'href="javascript:void(0);">',
-        Show More',
+        'Show More',
       '</a>'
     ].join(''));
 
