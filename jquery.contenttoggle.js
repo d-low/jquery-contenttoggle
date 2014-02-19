@@ -21,7 +21,7 @@
   $.ContentToggle.defaults = {
     collapsedHeight: 200,
     collapseText: "Show Less",
-    expandText: "Show More",
+    expandText: "Show More"
   };
 
 
