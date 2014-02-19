@@ -111,8 +111,7 @@
   };
 
   /**
-   * @description Remove all generated content and event handlers and return 
-   * the original element.
+   * @description Remove all generated content and event handlers and data. 
    */
   $.ContentToggle.prototype.destroy = function() { 
     if (this.$el.parent().hasClass("js-content-toggle-wrapper")) {
@@ -123,6 +122,8 @@
     this.$el.siblings(".js-content-toggle-link").off("click." + pluginName).remove();
 
     $(window).off("resize." + pluginName);
+
+    this.$el.removeData(pluginName);
   };
 
 
