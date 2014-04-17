@@ -252,7 +252,14 @@
         var self = $.data(this, pluginName);
 
         if (self) {
-          self.init();
+          self.init(options);
+
+          // When reinitializing we call our destory method since it is easier
+          // to remove our UI changes and then re-apply them.  In the process 
+          // we lose the instance of ourself that we saved to the element.  So 
+          // knowing that, we just save ourself to the element again here.
+          
+          $.data(this, pluginName, self); 
         }
         else {
           self = $.data(this, pluginName, new $.ContentToggle(options, this));
