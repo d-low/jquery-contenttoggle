@@ -26,7 +26,8 @@
     pretoggled_callback: function($el, toggleState, callback) {
       callback();
     },
-    toggled_callback: function($el, toggleState) {}
+    toggled_callback: function($el, toggleState) {},
+    gradientStopColor: "255,255,255"
   };
 
 
@@ -83,8 +84,13 @@
     
     var $contentToggleWrapper = this.$el.closest(".js-content-toggle-wrapper");
 
+    var style = "background: linear-gradient(to top, " + 
+      "rgb(" + this.options.gradientStopColor + ") 15%, " + 
+      "rgba(" + this.options.gradientStopColor + ", 0) 100%"; 
+
     $contentToggleWrapper.after([
-      '<div class="content-toggle-gradient js-content-toggle-gradient">',
+      '<div class="content-toggle-gradient js-content-toggle-gradient" ' + 
+        'style="' + style + '"">',
       '</div>',
       '<a class="content-toggle-link js-content-toggle-link js-show-more" ' + 
         'href="javascript:void(0);">',
